@@ -1,7 +1,7 @@
 <template>
     <b-modal class="reg-container" id="registrationModal"
-    hide-footer hide-header size="lg">
-        <b-form>
+    hide-footer hide-header size="lg" @hide="clearFields">
+        <b-form aria-autocomplete="off" autofill="off" autocomplete="off">
             <b-row class="reg-form-elem">
                 <b-col class="text-center">
                     <h4>
@@ -38,6 +38,8 @@
                                  type="text"
                                  v-model="nickName"
                                  @click="clearError"
+                                 autocomplete="off"
+                                 autofill="off"
                         />
                     </b-input-group>
                 </b-col>
@@ -49,6 +51,9 @@
                                  :type="passwordShow"
                                  v-model="password"
                                  @click="clearError"
+                                 @change="checkPassValid"
+                                 @mouseleave="checkPassValid"
+                                 autocomplete="nope"
                         />
                     </b-input-group>
                     <img ref="passEye" type="password" :src="images.closed" @click="switchVisibility" width="7%">
@@ -59,8 +64,12 @@
                     <b-input-group class="mb-2 mr-sm-2 mb-sm-0" prepend="Проверка пароля">
                         <b-input ref="confirm"
                                  :type="confirmShow"
-                                 v-model="password"
+                                 v-model="confirmPassword"
                                  @click="clearError"
+                                 autocomplete="off"
+                                 @change="checkConfirmed"
+                                 @mouseleave="checkConfirmed"
+                                 autofill="off"
                         />
                     </b-input-group>
                     <img ref="confirmEye" type="confirm" :src="images.closed" @click="switchVisibility" width="7%">
@@ -80,7 +89,6 @@
                     </a>
                     <b-button @click="performLogin"
                               size="lg"
-                              type="submit"
                               v-if="!authenticationInProgress"
                               variant="primary"
                     >
@@ -118,6 +126,8 @@
                 password: "",
                 passwordShow: "password",
                 confirmShow: "password",
+                passwordChecked: false,
+                passwordConfirmed: false,
                 confirmPassword: "",
                 name: "",
                 nickName: "",
@@ -140,10 +150,41 @@
                     this.passwordShow = hide ? "password" : "text" :
                     this.confirmShow = hide ? "password" : "text";
             },
+            clearFields() {
+                this.clearError();
+                this.email = "";
+                this.password = "";
+                this.confirmPassword = "";
+                this.name = "";
+                this.nickName = "";
+            },
+            checkPassValid() {
+                if (!this.password.match('/^(?=.*[A-Z])(?=.*\\d)(?=.*[a-z])[A-Za-z\\d]{8,}$')) this.authenticationError = "Пароль должен быть не меньше 8 символов и содержать минимум 1 заглавную букву и цифру";
+                else {
+                    this.authenticationError = "";
+                    this.passwordChecked = true;
+                }
+            },
+            checkConfirmed() {
+                if (this.password !== this.confirmPassword) this.authenticationError = "Подтверждение не совпадает с паролем";
+                else {
+                    this.authenticationError = "";
+                    this.passwordConfirmed = true;
+                }
+            },
+            checkAllFields() {
+                if (this.email.length == 0 || this.password.length == 0 || this.confirmPassword.length == 0 ||
+                this.name.length == 0 || this.nickName.length == 0) {
+                    this.authenticationError = "Необходимо заполнить все поля.";
+                }
+            },
             closeModal() {
                 this.$nextTick(() => {
                     this.$bvModal.hide('registrationModal');
                 })
+            },
+            validate() {
+
             },
             authorization() {
                 this.$emit('auth', true);
@@ -152,7 +193,12 @@
             clearError(){
                 this.authenticationError = "";
             },
-            performLogin() {
+            performLogin(event) {
+                event.preventDefault();
+                this.checkAllFields();
+                if (!this.passwordChecked) this.authenticationError += "\nПароль не удовлетворяет условиям безопасности.";
+                if (!this.passwordConfirmed) this.authenticationError += "\nПароль не подтвержден.";
+                if (this.authenticationError.length > 0) return false;
                 this.authenticationInProgress = true;
                 axios.post(API_SERVER_PATH + "/auth/registration", {
                     email: this.email,

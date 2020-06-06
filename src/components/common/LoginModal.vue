@@ -16,6 +16,8 @@
                                  type="text"
                                  v-model="email"
                                  @click="clearError"
+                                 @change="checkEmail"
+                                 @mouseleave="checkEmail"
                         />
                     </b-input-group>
                 </b-col>
@@ -24,11 +26,12 @@
                 <b-col offset="1" sm="10">
                     <b-input-group class="mb-2 mr-sm-2 mb-sm-0" prepend="Пароль">
                         <b-input id="password-input"
-                                 type="password"
+                                 :type="passwordShow"
                                  v-model="password"
                                  @click="clearError"
                         />
                     </b-input-group>
+                    <img ref="confirmEye" type="confirm" :src="images.closed" @click="switchVisibility" width="12%">
                 </b-col>
             </b-row>
             <b-row class="login-form-elem">
@@ -75,8 +78,13 @@
             return {
                 email: "",
                 password: "",
+                passwordShow: "password",
                 authenticationError: "",
-                authenticationInProgress: false
+                authenticationInProgress: false,
+                images: {
+                    open: require('@/assets/static/0_open.png'),
+                    closed: require('@/assets/static/0_close.png')
+                }
             }
         },
         methods: {
@@ -91,16 +99,29 @@
             clearError(){
                 this.authenticationError = "";
             },
+            checkEmail() {
+                if (!this.email.match('^([A-Za-z]{1,})[@]([A-Za-z]{1,})[.]([A-Za-z]{1,})$')) this.authenticationError = "Неправильный адрес почты";
+                else this.authenticationError = "";
+            },
             closeModal() {
+                this.email = "";
+                this.password = "";
                 this.$nextTick(() => {
                     this.$bvModal.hide('loginModal');
                 })
+            },
+            switchVisibility(event) {
+                let hide = event.target.src == this.images.open;
+                event.target.src = hide ? this.images.closed : this.images.open;
+                this.passwordShow = hide ? "password" : "text";
             },
             registration() {
                 this.$emit('register', true);
                 this.closeModal();
             },
-            performLogin() {
+            performLogin(event) {
+                event.preventDefault();
+                if (this.authenticationError.length > 0) return false;
                 this.authenticationInProgress = true;
                 axios.post(API_SERVER_PATH + "/auth/login", {
                     email: this.email,

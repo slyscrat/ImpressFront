@@ -1,27 +1,33 @@
 <template>
-    <div class="student-container">
-        <b-navbar toggleable="lg" type="dark" variant="dark">
-<!--            <b-navbar-brand href="#">
-                <img src="https://placekitten.com/g/30/30" alt="Kitten">
-            </b-navbar-brand>-->
+    <div class="items-container">
+        <b-navbar toggleable="sm" type="dark" variant="dark">
             <img :src="images.logo" style="cursor:pointer" @click="$router.push('/movie/list')"/>
 
             <b-navbar-nav class="notes" fill>
                 <b-nav-item exact
                             exact-active-class="active"
+                            v-bind:class="{active: rootRoute == '/movie/list' || rootRoute == '/movie'}"
                             to="/movie/list"
+                            ref = "/movie/list"
+                            @click="changeRoute"
                 >
                     Фильмы
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
+                            v-bind:class="{active: rootRoute == '/game/list'}"
                             to="/game/list"
+                            ref = "/game/list"
+                            @click="changeRoute"
                 >
                     Игры
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
+                            v-bind:class="{active: rootRoute == '/book/list'}"
                             to="/book/list"
+                            ref = "/book/list"
+                            @click="changeRoute"
                 >
                     Книги
                 </b-nav-item>
@@ -59,11 +65,39 @@
             </b-navbar-nav>
 
         </b-navbar>
-<!--        <b-row>
-            <b-alert :show="fetchError !== ''" variant="danger">
-                {{fetchError}}
-            </b-alert>
-        </b-row>-->
+        <b-navbar type="dark" variant="dark" class="lowerNavbar">
+            <b-navbar-nav class="notes" fill>
+                <b-nav-item exact
+                            exact-active-class="active"
+                            :to= "this.rootRoute"
+                >
+                    Все
+                </b-nav-item>
+                <b-nav-item exact
+                            exact-active-class="active"
+                            :to= "this.rootRoute + '/futured'"
+                >
+                    Отложенные
+                </b-nav-item>
+                <b-nav-item exact
+                            exact-active-class="active"
+                            :to= "this.rootRoute + '/rated'"
+                            @click="changeSelected"
+                >
+                    Оцененные
+                </b-nav-item>
+                <b-nav-item exact
+                            exact-active-class="active"
+                            :to= "this.rootRoute + '/recommended'"
+                            @click="changeSelected"
+                >
+                    Рекомендованные
+                </b-nav-item>
+            </b-navbar-nav>
+        </b-navbar>
+        <sortingComponent :type="this.rootRoute" @search="sort"/>
+        <b-button @click="test">Тест</b-button>
+        <itemComponent :type="this.rootRoute" :item="this.items[0]" @openItem="itemInfo" @popUp="popUp"/>
         <router-view>
         </router-view>
         <loginModal @register="registration" @auth="reload"/>
@@ -75,39 +109,85 @@
 	import {mapMutations} from "vuex";
 	import {LOGOUT} from "@/store/modules/security";
 	import axios from "axios";
-    import loginModal from '@/components/common/LoginModal'
-    import registrationModal from '@/components/common/RegistrationModal'
+    import loginModal from '@/components/common/LoginModal';
+    import sortingComponent from '@/components/common/SortingComponent';
+    import itemComponent from '@/components/movie/ItemComponent';
+    import registrationModal from '@/components/common/RegistrationModal';
 	import {API_SERVER_PATH} from "@/utils/constants";
 
 	export default {
-		name: "UpperHeader",
+		name: "MainPage",
         components: {
             loginModal,
-            registrationModal
+            registrationModal,
+            sortingComponent,
+            itemComponent
         },
 		data() {
 			return {
+                rootRoute: "",
                 searchData: "",
 				user: {},
                 page: 0,
+                itemToShow: null,
                 showModal: false,
                 images: {
                     logo: require('@/assets/static/0_log.png'),
                     search: require('@/assets/static/0_searc.png'),
                     user: require('@/assets/static/0_user.png')
                 },
-				fetchError: ''
+				fetchError: '',
+                items: []
 			}
 		},
 		methods: {
 			...mapMutations('security', {
 				logout: LOGOUT
 			}),
+            itemInfo(item) {
+                let route = this.rootRoute;
+                route = route.substring(1);
+                this.$router.push('/' + route.substring(0, route.indexOf('/') + 1) + item);
+            },
             authorization() {
                 this.$refs.authBtn.click();
             },
+            popUp() {
+                console.log("Pop up CALLED");
+            },
             registration() {
                 this.$refs.regBtn.click();
+            },
+            test() {
+                var object = {
+                    description : "Продолжение истории маленького и непоседливого кролика по имени Питер. Беатрис, Томас и крольчата, наконец, находят общий язык и начинают спокойную и размеренную жизнь за городом. Однако Питеру это совсем не по нраву: его мятежная душа требует приключений, и он отправляется на их поиски в большой город, туда, где его проделки уж точно оценят по достоинству. Тем временем, члены его большой дружной семьи, рискуя жизнью, отправляются вслед за Питером, чтобы вернуть его домой, и теперь беглецу предстоит решить, что же для него важнее всего.",
+                    duration : 0,
+                    futured : false,
+                    icon : "/rabbit.jpg",
+                    id : 522478,
+                    name : "Кролик Питер 2",
+                    rate : 0
+                };
+                this.items.push(object);
+            },
+            sort(sortValue, genresValues) {
+                let genres = "";
+                genresValues.forEach((genre) => genres += (genre + ","));
+                genres = genres.substring(0, genres.length - 1);
+                axios.get(API_SERVER_PATH + this.rootRoute, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                    params: {
+                        p: this.page,
+                        s: sortValue,
+                        g: genres
+                    }
+                }).then((response) => {
+                    this.items = response.data;
+                }).catch((error) => {
+                    console.log(error);
+                });
             },
             sendLogout() {
                 axios.post(API_SERVER_PATH + "/auth/logout", null, {
@@ -120,6 +200,12 @@
                 }).catch((error) => {
                     console.log(error);
                 });
+            },
+            changeRoute() {
+                this.rootRoute = this.$router.history.getCurrentLocation();
+            },
+            changeSelected() {
+                (this.$refs[this.rootRoute]).childNodes[0].addClass('active');
             },
             sendLogin() {
                 axios.get(API_SERVER_PATH + `/user/${this.$store.getters['security/id']}`, {
@@ -138,11 +224,11 @@
                     })
             },
             reload() {
-                console.log("reload");
                 if (this.$store.getters['security/oldId'] != this.$store.getters['security/id']) this.$forceUpdate();
             },
             search() {
-                axios.get(API_SERVER_PATH + this.$router.history.getCurrentLocation() + '/search', {
+                if (this.searchData.length == 0) return false;
+                axios.get(API_SERVER_PATH + this.rootRoute + '/search', {
                     params: {
                         q: this.searchData,
                         p: this.page
@@ -151,8 +237,9 @@
                         'Authorization': 'Bearer ' + this.$store.getters['security/token']
                     }
                 }).then((response) => {
-                    console.log(response);
+                    // add search info in page
                     this.searchData = "";
+                    this.items = response.data;
                 }).catch((error) => {
                     if (error.response) {
                         this.fetchError = error.response.data;
@@ -163,6 +250,7 @@
             }
 		},
 		mounted() {
+            this.changeRoute();
             if (this.$store.getters['security/id']) {
                 this.sendLogin();
             }
@@ -180,8 +268,8 @@
         background-color: yellow;
     }
 
-    .student-container {
-        background-color: whitesmoke;
+    .items-container {
+        background-color: whitesmoke; /*#38444c;*/
         position: absolute;
         top: 0;
         left: 0;
@@ -198,11 +286,10 @@
     select.form-control {
         background: transparent;
         border: none;
-        border-bottom: 1px solid chartreuse;
+        border-bottom: 1px solid;
         -webkit-box-shadow: none;
         box-shadow: none;
         border-radius: 0;
-        color: pink;
     }
 
     input[type="text"]:focus,
@@ -213,7 +300,7 @@
     }
 
     .navbar-nav .active::after {
-        border-bottom: 5px solid #5bc0eb;
+        border-bottom: 5px solid #eadcc7;
         bottom: -10px;
         content: " ";
         left: 0;
@@ -226,6 +313,10 @@
         flex-direction: row;
         align-content: space-between;
         justify-content: space-around;
+    }
+
+    .lowerNavbar {
+        opacity: 65%;
     }
 
     .notes {
