@@ -6,35 +6,35 @@
             <b-navbar-nav class="notes" fill>
                 <b-nav-item exact
                             exact-active-class="active"
-                            v-bind:class="{active: rootRoute == '/movie/list' || rootRoute == '/movie'}"
+                            v-bind:class="{active: rootRoute.includes('movie')}"
                             to="/movie/list"
                             ref = "/movie/list"
-                            @click="changeRoute"
+                            @click="changeRoute(); changeState();"
                 >
                     Фильмы
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
-                            v-bind:class="{active: rootRoute == '/game/list'}"
+                            v-bind:class="{active: rootRoute.includes('game')}"
                             to="/game/list"
                             ref = "/game/list"
-                            @click="changeRoute"
+                            @click="changeRoute(); changeState();"
                 >
                     Игры
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
-                            v-bind:class="{active: rootRoute == '/book/list'}"
+                            v-bind:class="{active: rootRoute.includes('book')}"
                             to="/book/list"
                             ref = "/book/list"
-                            @click="changeRoute"
+                            @click="changeRoute(); changeState();"
                 >
                     Книги
                 </b-nav-item>
             </b-navbar-nav>
             <b-navbar-nav>
                 <form class="form-inline" v-on:keydown.enter.prevent="search">
-                    <input class="form-control mr-sm-2" type="text" placeholder="Поиск" v-model="searchData">
+                    <input class="form-control mr-sm-2" type="search" placeholder="Поиск" v-model="searchData">
                     <b-button @click="search" class="text-hide">
                         <img :src="images.search"/>
                     </b-button>
@@ -70,34 +70,53 @@
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute"
+                            @click="changeState"
                 >
                     Все
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute + '/futured'"
+                            @click="changeState"
                 >
                     Отложенные
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute + '/rated'"
-                            @click="changeSelected"
+                            @click="changeState"
                 >
                     Оцененные
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute + '/recommended'"
-                            @click="changeSelected"
+                            @click="changeState"
                 >
                     Рекомендованные
                 </b-nav-item>
             </b-navbar-nav>
         </b-navbar>
-        <sortingComponent :type="this.rootRoute" @search="sort"/>
-        <b-button @click="test">Тест</b-button>
-        <itemComponent :type="this.rootRoute" :item="this.items[0]" @openItem="itemInfo" @popUp="popUp"/>
+        <sortingComponent :key="cleanInputs" :render="this.isList" :type="this.rootRoute" @search="sort"/>
+        <!--<b-button @click="test">Тест</b-button>-->
+        <!-- Create popUp inside this container -->
+        <itemContainer :render="this.isList" :items="this.items" :searchData="this.searchData" @openItem="itemInfo" />
+        <div>
+            <img :src="images.left" @click="move(false)"
+                 :class="{unactiveImg: this.page < 2, activeImg: this.page > 1}"
+                 style="width:1.8%"/>
+            <span>
+                Страница {{this.page}}
+            </span>
+            <img :src="images.right" @click="move(true)"
+                 :class="{unactiveImg: this.items.length < 20, activeImg: this.items.length === 20}"
+                 style="width:1.8%"/>
+        </div>
+        <div toggleable="sm" type="dark" variant="dark" class="myFooter">
+            2020 Дипломная работа Бутышкиса Ильи
+        </div>
+
+        <!--<itemComponent :type="this.rootRoute" :item="this.items[0]" @openItem="itemInfo" @popUp="popUp"/>-->
         <router-view>
         </router-view>
         <loginModal @register="registration" @auth="reload"/>
@@ -106,12 +125,14 @@
 </template>
 
 <script>
+    // TODO : remove test method
 	import {mapMutations} from "vuex";
 	import {LOGOUT} from "@/store/modules/security";
 	import axios from "axios";
     import loginModal from '@/components/common/LoginModal';
     import sortingComponent from '@/components/common/SortingComponent';
-    import itemComponent from '@/components/movie/ItemComponent';
+    /*import itemComponent from '@/components/movie/ItemComponent';*/
+    import itemContainer from '@/components/movie/ItemContainer';
     import registrationModal from '@/components/common/RegistrationModal';
 	import {API_SERVER_PATH} from "@/utils/constants";
 
@@ -121,43 +142,62 @@
             loginModal,
             registrationModal,
             sortingComponent,
-            itemComponent
+            /*itemComponent,*/
+            itemContainer
         },
 		data() {
 			return {
+                oldPath: "",
+                cleanInputs: 0,
                 rootRoute: "",
                 searchData: "",
 				user: {},
-                page: 0,
+                isList: "",
+                page: 1,
                 itemToShow: null,
                 showModal: false,
                 images: {
                     logo: require('@/assets/static/0_log.png'),
                     search: require('@/assets/static/0_searc.png'),
-                    user: require('@/assets/static/0_user.png')
+                    user: require('@/assets/static/0_user.png'),
+                    left: require('@/assets/static/0_left.png'),
+                    right: require('@/assets/static/0_right.png'),
                 },
 				fetchError: '',
                 items: []
 			}
 		},
+        watch: {
+            page: function() {
+                console.log('Page changed');
+            }
+        },
 		methods: {
 			...mapMutations('security', {
 				logout: LOGOUT
 			}),
-            itemInfo(item) {
+            itemInfo(id) {
+                this.isList = false;
                 let route = this.rootRoute;
                 route = route.substring(1);
-                this.$router.push('/' + route.substring(0, route.indexOf('/') + 1) + item);
+                this.$router.push('/' + route.substring(0, route.indexOf('/') + 1) + id);
+                //this.path = this.$router.history.getCurrrentLocation();
+                //console.log(this.path);
             },
             authorization() {
                 this.$refs.authBtn.click();
             },
-            popUp() {
-                console.log("Pop up CALLED");
-            },
             registration() {
                 this.$refs.regBtn.click();
             },
+            move(forward) {
+                // check page not overloaded
+                // check current page + send responsive method = fetchData()
+                if (forward && this.items.length === 20) this.page++;
+                else if (!forward && this.page > 1) this.page--;
+                else return false;
+            },
+            /*
             test() {
                 var object = {
                     description : "Продолжение истории маленького и непоседливого кролика по имени Питер. Беатрис, Томас и крольчата, наконец, находят общий язык и начинают спокойную и размеренную жизнь за городом. Однако Питеру это совсем не по нраву: его мятежная душа требует приключений, и он отправляется на их поиски в большой город, туда, где его проделки уж точно оценят по достоинству. Тем временем, члены его большой дружной семьи, рискуя жизнью, отправляются вслед за Питером, чтобы вернуть его домой, и теперь беглецу предстоит решить, что же для него важнее всего.",
@@ -169,8 +209,9 @@
                     rate : 0
                 };
                 this.items.push(object);
-            },
+            },*/
             sort(sortValue, genresValues) {
+                this.searchData = "";
                 let genres = "";
                 genresValues.forEach((genre) => genres += (genre + ","));
                 genres = genres.substring(0, genres.length - 1);
@@ -179,7 +220,7 @@
                         'Authorization': 'Bearer ' + this.$store.getters['security/token']
                     },
                     params: {
-                        p: this.page,
+                        p: this.page - 1,
                         s: sortValue,
                         g: genres
                     }
@@ -201,8 +242,20 @@
                     console.log(error);
                 });
             },
+            fetchData() {
+                console.log('FETCHING');
+            },
             changeRoute() {
-                this.rootRoute = this.$router.history.getCurrentLocation();
+                console.log("routeChanged");
+                let route = this.$router.history.getCurrentLocation().substring(1);
+                route = route.substring(0, route.indexOf('/'));
+                this.rootRoute = '/'+ route + '/list';
+                this.fetchData();
+            },
+            changeState() {
+                this.page = 1;
+                this.cleanInputs++;
+                this.searchData = "";
             },
             changeSelected() {
                 (this.$refs[this.rootRoute]).childNodes[0].addClass('active');
@@ -228,21 +281,23 @@
             },
             search() {
                 if (this.searchData.length == 0) return false;
+                this.$router.push(this.rootRoute + '/search');
+                this.cleanInputs++;
                 axios.get(API_SERVER_PATH + this.rootRoute + '/search', {
                     params: {
                         q: this.searchData,
-                        p: this.page
+                        p: this.page - 1
                     },
                     headers: {
                         'Authorization': 'Bearer ' + this.$store.getters['security/token']
                     }
                 }).then((response) => {
-                    // add search info in page
-                    this.searchData = "";
                     this.items = response.data;
+                    console.log(response.data);
                 }).catch((error) => {
                     if (error.response) {
                         this.fetchError = error.response.data;
+                        console.log('');
                     } else if (error.request) {
                         this.fetchError = "Сервер не отвечает";
                     }
@@ -250,14 +305,20 @@
             }
 		},
 		mounted() {
+            console.log('mounted');
+            this.isList = true;
             this.changeRoute();
             if (this.$store.getters['security/id']) {
                 this.sendLogin();
             }
 		},
         updated() {
-            if (this.$store.getters['security/id'] && this.$store.getters['security/id'] != this.user.id) {
-                this.sendLogin();
+            console.log('updated');
+            if (this.$router.history.getCurrentLocation().includes('list')) this.isList = true;
+            if (this.$store.getters['security/id'] && this.$store.getters['security/id'] != this.user.id) this.sendLogin();
+            if (this.oldPath !== this.$router.history.getCurrentLocation()) {
+                this.oldPath = this.$router.history.getCurrentLocation();
+                this.fetchData();
             }
         }
 	}
@@ -266,6 +327,15 @@
 <style scoped>
     .test {
         background-color: yellow;
+    }
+
+    .activeImg {
+        opacity: 1;
+        cursor: pointer;
+    }
+
+    .unactiveImg {
+        opacity: 0.5;
     }
 
     .items-container {
@@ -282,7 +352,17 @@
         position: relative;
     }
 
+    /* TODO */
+    .myFooter {
+        color: #BDD5EC;
+        opacity: 0.5;
+        background-color: #292b2c;
+        text-align: right;
+        height: 5%;
+    }
+
     input[type="text"],
+    input[type="search"],
     select.form-control {
         background: transparent;
         border: none;
@@ -293,6 +373,7 @@
     }
 
     input[type="text"]:focus,
+    input[type="search"]:focus,
     select.form-control:focus {
         -webkit-box-shadow: none;
         box-shadow: none;

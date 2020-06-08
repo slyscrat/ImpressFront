@@ -1,5 +1,5 @@
 <template>
-    <div id="sortingComponent">
+    <div id="sortingComponent" v-if="isShow">
         <b-form-group label="Сортировка">
             <b-form-radio-group
                     v-model="sort"
@@ -27,11 +27,12 @@
 
     export default {
         name: "SortingComponent",
-        props: ['type'],
+        props: ['render', 'type'],
         data() {
             return {
                 genres: [],
                 sort: 1,
+                isShow: true,
                 genreOptions: [],
                 sortOptions: [
                     { text: 'По дате выпуска (убывание)', value: '1' },
@@ -42,7 +43,18 @@
             }
         },
         watch: {
+            render: function() {
+                this.isShow = this.render;
+            },
             type: function(){
+                this.updateData();
+            }
+        },
+        mounted() {
+            this.updateData();
+        },
+        methods: {
+            updateData() {
                 this.sort = 1;
                 this.genres = [];
                 if (this.type === '/book/list') {
@@ -78,6 +90,7 @@
                     this.sortOptions[0].text = "По дате выпуска (убывание)";
                     this.sortOptions[1].text = "По дате выпуска (возрастание)";
                 }
+                if (this.type.length > 0)
                 axios.get(API_SERVER_PATH + this.type + '/genres').then((response) => {
                     for (let g of response.data) {
                         this.genreOptions.push({text:g.name, value:g.id});
@@ -85,9 +98,7 @@
                 }).catch((error) => {
                     console.log(error);
                 });
-            }
-        },
-        methods: {
+            },
             searchRequest() {
                 this.$emit('search', this.sort, this.genres);
             }

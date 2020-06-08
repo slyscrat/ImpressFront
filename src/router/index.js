@@ -22,69 +22,66 @@ const router = new VueRouter({
 			path: '/movie', component: Movie,
 			children: [
 				{
-					path: 'list', component: Movie,
-					children: [
-						{
-							path:'rated',
-							component: Movie
-						},
-						{
-							path: 'futured',
-							component: Movie
-						},
-						{
-							path: 'search',
-							component: Movie
-						}]
+					path: 'list',
 				},
 				{
 					path: ':id', component: ItemView
+				},
+				{
+					path:'list/rated',
+				},
+				{
+					path: 'list/futured',
+				},
+				{
+					path: 'list/search',
+				},
+				{
+					path: 'list/recommended',
 				}]
 		},
 		{
 			path: '/game', component: Movie,
 			children: [
 				{
-					path: 'list', component: Movie,
-					children: [
-						{
-							path:'rated',
-							component: Movie
-						},
-						{
-							path: 'futured',
-							component: Movie
-						},
-						{
-							path: 'search',
-							component: Movie
-						}]
+					path: 'list',
 				},
 				{
 					path: ':id', component: ItemView
+				},
+				{
+					path:'list/rated',
+				},
+				{
+					path: 'list/futured',
+				},
+				{
+					path: 'list/search',
+				},
+				{
+					path: 'list/recommended',
 				}]
 		},
 		{
 			path: '/book', component: Movie,
 			children: [
 				{
-					path: 'list', component: Movie,
-					children: [
-						{
-							path:'rated',
-							component: Movie
-						},
-						{
-							path: 'futured',
-							component: Movie
-						},
-						{
-							path: 'search',
-							component: Movie
-						}]
+					path: 'list',
 				},
 				{
 					path: ':id', component: ItemView
+				},
+				{
+					path:'list/rated',
+				},
+				{
+					path: 'list/futured',
+				},
+				{
+					path: 'list/search',
+				},
+				{
+					path: 'list/recommended',
 				}]
 		},
 		{

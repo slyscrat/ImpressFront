@@ -1,8 +1,8 @@
 <template>
     <div>
-        <div class="myCard" v-if="show">
-            <!--<img :src="this.source + this.innerItem.icon" class="clickable" :class="this.itemType"/>-->
-            <img :src="images.rabbit" class="clickable" :class="this.itemType" @click="openItem"/>
+        <div class="myCard" :item="item">
+            <img :src="this.source + this.item.icon" class="clickable" :class="this.itemType" @click="openItem"/>
+            <!--<img :src="images.rabbit" class="clickable" :class="this.itemType" @click="openItem"/>-->
             <div>
                 <img :src="images.mark" class="smallImg" @click="future"
                      :class="{ forFuture: this.rating === 0,
@@ -13,8 +13,9 @@
                                 :read-only="this.$store.getters['security/token'].length === 0"/>
                 </span>
             </div>
-            <span class="clickable myText" @click="openItem">Гарри Поттер и философский камень</span>
+            <span class="clickable myText" @click="openItem">{{item.name}}</span>
             <!--<span class="clickable myText" @click="openItem">{{this.innerItem.name}}</span>-->
+            <!-- change text to Гарри Поттер и философский камень -->
         </div>
     </div>
 </template>
@@ -26,26 +27,25 @@
 
     export default {
         name: "ItemComponent",
-        props: ['item', 'type'],
+        props: ['item'],
         components: {
             starRating
         },
         data() {
             return {
-                show: false,
                 source: "",
                 itemType: "",
-                rating: "",
-                innerItem: {},
+                rating: -1,
                 oldRating: -1,
                 images: {
                     mark: require('@/assets/static/0_bookmark.png'),
                     rabbit: require('@/assets/static/rabbit.jpg'),
+                    book: require('@/assets/static/0_book.png')
                 }
             }
-        },
+        },/*
         watch: {
-            type: function() {
+            /!*type: function() {
                 this.source = '';
                 this.itemType = '';
                 let itemT = this.type.substring(1);
@@ -54,20 +54,35 @@
                     this.source = SMALL_MOVIE_IMG;
                 }
                 console.log(this.itemType);
-            },
+                console.log('TYPE GET');
+            },*!/
             item: function() {
+                console.log('ITEM GET');
                 this.innerItem = this.item;
-                this.show = true;
+                let type = this.$router.history.getCurrentLocation();
+                console.log(this.$router.history.getCurrentLocation());
+                this.source = SMALL_MOVIE_IMG;
+                type = type.substring(1);
+                this.itemType = type.substring(0, type.indexOf('/'));
+                console.log(this.itemType);
             },
             innerItem: function() {
                 this.oldRating = this.innerItem.rate;
                 this.rating = this.innerItem.rate;
             }
+        },*/
+        mounted() {
+            this.source = '';
+            let type = this.$router.history.getCurrentLocation();
+            type = type.substring(1);
+            this.itemType = type.substring(0, type.indexOf('/'));
+            if (this.itemType === 'movie') this.source = SMALL_MOVIE_IMG;
+            if (this.itemType === 'book' && this.item.icon.includes('cdn')) this.item.icon = this.images.book;
         },
         methods: {
             future() {
                 if (!this.authorityCheck()) return false;
-                axios.post(API_SERVER_PATH + '/${this.itemType}/{this.item.id}/rate', 0, {
+                axios.post(API_SERVER_PATH + `/${this.itemType}/${this.item.id}/rate`, 0, {
                     headers: {
                         'Authorization': 'Bearer ' + this.$store.getters['security/token']
                     },
@@ -83,7 +98,7 @@
             },
             rate() {
                 if (!this.authorityCheck()) return false;
-                axios.post(API_SERVER_PATH + '/${this.itemType}/{this.item.id}/rate', this.rating, {
+                axios.post(API_SERVER_PATH + `/${this.itemType}/${this.item.id}/rate`, this.rating, {
                     headers: {
                         'Authorization': 'Bearer ' + this.$store.getters['security/token']
                     },
