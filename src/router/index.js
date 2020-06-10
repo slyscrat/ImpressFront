@@ -20,6 +20,7 @@ const router = new VueRouter({
 		{path: '/!*!/list/search', component: Movie},*/
 		{
 			path: '/movie', component: Movie,
+			redirect:'/movie/list',
 			children: [
 				{
 					path: 'list',
@@ -42,21 +43,22 @@ const router = new VueRouter({
 		},
 		{
 			path: '/game', component: Movie,
+			redirect: '/game/list',
 			children: [
 				{
-					path: 'list',
+					path: 'list', props: (route) => ({page: route.query.page})
 				},
 				{
 					path: ':id', component: ItemView
 				},
 				{
-					path:'list/rated',
+					path:'list/rated', props: (route) => ({page: route.query.page})
 				},
 				{
-					path: 'list/futured',
+					path: 'list/futured', props: (route) => ({page: route.query.page})
 				},
 				{
-					path: 'list/search',
+					path: 'list/search', props: (route) => ({page: route.query.page})
 				},
 				{
 					path: 'list/recommended',
@@ -64,6 +66,7 @@ const router = new VueRouter({
 		},
 		{
 			path: '/book', component: Movie,
+			redirect: '/book/list',
 			children: [
 				{
 					path: 'list',
@@ -86,7 +89,7 @@ const router = new VueRouter({
 		},
 		{
 			path: '/admin/movie/list', component: HelloWorld2
-		},
+		}
 	],
 });
 
@@ -108,7 +111,11 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
 	let role = store.getters['security/role'];
-	if (to.fullPath.startsWith('/admin') && role !== ROLE_ADMIN) {
+	if (role === ROLE_ADMIN) {
+		let newRoute = '/admin' + to;
+		next(newRoute);
+	}
+	else if (to.fullPath.startsWith('/admin') && role !== ROLE_ADMIN) {
 		next(false);
 	} else {
 		next();

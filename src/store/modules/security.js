@@ -2,6 +2,7 @@ import {NOT_AUTHENTICATED} from "@/utils/constants";
 
 export const AUTHENTICATE = "AUTHENTICATE";
 export const LOGOUT = "LOGOUT";
+export const APPROVE = "APPROVE";
 
 const state = {
 	id: "",
@@ -35,6 +36,11 @@ const getters = {
 const mutations = {
 	[AUTHENTICATE](state, authCredentials) {
 		Object.assign(state, authCredentials);
+	},
+
+	[APPROVE](state) {
+		state.oldId = state.id;
+		console.log('1 ' + state.oldId);
 	},
 
 	[LOGOUT](state) {

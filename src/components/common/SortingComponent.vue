@@ -100,7 +100,8 @@
                 });
             },
             searchRequest() {
-                this.$emit('search', this.sort, this.genres);
+                this.$emit('search', this.sort, this.genres, true);
+                window.scrollTo(0,0);
             }
         }
     }

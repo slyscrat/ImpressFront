@@ -69,7 +69,7 @@
     import {API_SERVER_PATH, ROLE_ADMIN, ROLE_USER} from "@/utils/constants";
     import axios from "axios";
     import {AUTHENTICATE, LOGOUT} from "@/store/modules/security";
-    import {REG, CLEAN} from "@/store/modules/helpers";
+    /*import {REG, CLEAN} from "@/store/modules/helpers";*/
     import {mapMutations} from "vuex";
 
     export default {
@@ -91,11 +91,11 @@
             ...mapMutations('security', {
                 authenticate: AUTHENTICATE,
                 logout: LOGOUT
-            }),
+            }),/*
             ...mapMutations('helpers', {
                 register: REG,
                 clean: CLEAN
-            }),
+            }),*/
             clearError(){
                 this.authenticationError = "";
             },
@@ -136,7 +136,7 @@
                         role: response.data['userId'] === 1 ? ROLE_ADMIN : ROLE_USER,
                         token: response.data['token'],
                     });
-                    this.clean();
+                    //this.clean();
                     this.$emit('auth', true);
                     this.closeModal();
                     /*if (response.data['userId'] === 1)

@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div class="myCard" :item="item" :key="render">
-            <img :src="this.source + this.item.icon" class="clickable" :class="this.itemType" @click="openItem"/>
+        <div class="myCard" :item="item" >
+            <img :src="this.source + item.icon" class="clickable" :class="this.itemType" @click="openItem"/>
             <!--<img :src="images.rabbit" class="clickable" :class="this.itemType" @click="openItem"/>-->
             <div>
                 <img :src="images.mark" class="smallImg" @click="future"
@@ -13,7 +13,7 @@
                                 :read-only="this.$store.getters['security/token'].length === 0"/>
                 </span>
             </div>
-            <span class="clickable myText" @click="openItem">{{this.item.name}}</span>
+            <span class="clickable myText" @click="openItem">{{item.name}}</span>
             <!--<span class="clickable myText" @click="openItem">{{this.innerItem.name}}</span>-->
             <!-- change text to Гарри Поттер и философский камень -->
         </div>
@@ -21,9 +21,8 @@
 </template>
 
 <script>
-    import {/*API_SERVER_PATH, */SMALL_MOVIE_IMG} from "@/utils/constants"
+    import {SMALL_MOVIE_IMG} from "@/utils/constants"
     import starRating from "vue-star-rating";
-    /*import axios from "axios";*/
 
     export default {
         name: "ItemComponent",
@@ -33,10 +32,9 @@
         },
         data() {
             return {
-                render: 0,
                 source: "",
                 itemType: "",
-                rating: -1,
+                rating: this.item.rate,
                 oldRating: -1,
                 images: {
                     mark: require('@/assets/static/0_bookmark.png'),
@@ -44,48 +42,14 @@
                 }
             }
         },
-        watch: {
-            /*type: function() {
-                this.source = '';
-                this.itemType = '';
-                let itemT = this.type.substring(1);
-                this.itemType = itemT.substring(0, itemT.indexOf('/'));
-                if (this.itemType === 'movie') {
-                    this.source = SMALL_MOVIE_IMG;
-                }
-                console.log(this.itemType);
-                console.log('TYPE GET');
-            },*/
-            item: function () {
-                this.rating = this.item.rate;
-                console.log("ITEM CHANGED");
-                console.log(this.item);
-            }
-            /*item: function() {
-                console.log('ITEM GET');
-                this.source = "";
-                let type = this.$router.history.getCurrentLocation();
-                type = type.substring(1);
-                this.itemType = type.substring(0, type.indexOf('/'));
-                if (this.itemType === 'movie') this.source = SMALL_MOVIE_IMG;
-                if (this.itemType === 'book' && this.item.icon.includes('cdn')) this.item.icon = this.images.book;
-                console.log(this.item.name);
-            }*//*,
-            innerItem: function() {
-                this.oldRating = this.innerItem.rate;
-                this.rating = this.innerItem.rate;
-            }*/
-        },
         mounted() {
             console.log("ITEM MOUNTED");
-            console.log(this.item);
             this.source = '';
             let type = this.$router.history.getCurrentLocation();
             type = type.substring(1);
             this.itemType = type.substring(0, type.indexOf('/'));
             if (this.itemType === 'movie') this.source = SMALL_MOVIE_IMG;
             if (this.itemType === 'book' && this.item.icon.includes('cdn')) this.item.icon = this.images.book;
-            this.rating = this.item.rate;
             this.oldRating = this.item.rate;
         },
         methods: {
@@ -107,9 +71,21 @@
                 return this.$store.getters['security/token'].length > 0;
             }
         },
+        /*watch: {
+            item: function() {
+                console.log("ITEM CHANGED");
+                this.source = '';
+                let type = this.$router.history.getCurrentLocation();
+                type = type.substring(1);
+                this.itemType = type.substring(0, type.indexOf('/'));
+                if (this.itemType === 'movie') this.source = SMALL_MOVIE_IMG;
+                if (this.itemType === 'book' && this.item.icon.includes('cdn')) this.item.icon = this.images.book;
+                this.rating = this.item.rate;
+                this.oldRating = this.rating;
+            },
+        },*/
         updated() {
             console.log("ITEM UPDATED");
-            console.log(this.item);
         }
     }
 </script>

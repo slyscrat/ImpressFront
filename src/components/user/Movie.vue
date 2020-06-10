@@ -3,13 +3,13 @@
         <b-navbar toggleable="sm" type="dark" variant="dark">
             <img :src="images.logo" style="cursor:pointer" @click="$router.push('/movie/list')"/>
 
-            <b-navbar-nav class="notes" fill>
+            <b-navbar-nav class="notes" fill fixed="top">
                 <b-nav-item exact
                             exact-active-class="active"
                             v-bind:class="{active: rootRoute.includes('movie')}"
                             to="/movie/list"
                             ref = "/movie/list"
-                            @click="changeRoute(); changeState();"
+                            @click="changeRoute(); changeState(); scrollToTop();"
                 >
                     Фильмы
                 </b-nav-item>
@@ -18,7 +18,7 @@
                             v-bind:class="{active: rootRoute.includes('game')}"
                             to="/game/list"
                             ref = "/game/list"
-                            @click="changeRoute(); changeState();"
+                            @click="changeRoute(); changeState(); scrollToTop();"
                 >
                     Игры
                 </b-nav-item>
@@ -27,7 +27,7 @@
                             v-bind:class="{active: rootRoute.includes('book')}"
                             to="/book/list"
                             ref = "/book/list"
-                            @click="changeRoute(); changeState();"
+                            @click="changeRoute(); changeState(); scrollToTop();"
                 >
                     Книги
                 </b-nav-item>
@@ -70,38 +70,38 @@
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute"
-                            @click="changeState"
+                            @click="changeState(); scrollToTop();"
                 >
                     Все
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute + '/futured'"
-                            @click="changeState"
+                            @click="changeState(); scrollToTop();"
                 >
                     Отложенные
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute + '/rated'"
-                            @click="changeState"
+                            @click="changeState(); scrollToTop();"
                 >
                     Оцененные
                 </b-nav-item>
                 <b-nav-item exact
                             exact-active-class="active"
                             :to= "this.rootRoute + '/recommended'"
-                            @click="changeState"
+                            @click="changeState(); scrollToTop();"
                 >
                     Рекомендованные
                 </b-nav-item>
             </b-navbar-nav>
         </b-navbar>
         <sortingComponent :key="cleanInputs" :render="this.isList" :type="this.rootRoute" @search="sort"/>
-        <!--<b-button @click="test">Тест</b-button>-->
-        <!-- Create popUp inside this container -->
-        <itemContainer :render="this.isList" :items="this.items" :searchData="this.searchData" @openItem="itemInfo" />
-        <div>
+        <span v-if="showMessage && isList">У произведения есть заметка, поэтому оно отмечено Отложенным</span>
+        <itemContainer :render="this.isList" :items="this.items" :searchData="this.searchData" :message="this.fetchError"
+                       @openItem="itemInfo" @fut="sendFut" @rat="sendRate"/>
+        <div v-if="this.isList">
             <img :src="images.left" @click="move(false)"
                  :class="{unactiveImg: this.page < 2, activeImg: this.page > 1}"
                  style="width:1.8%"/>
@@ -116,7 +116,6 @@
             2020 Дипломная работа Бутышкиса Ильи
         </div>
 
-        <!--<itemComponent :type="this.rootRoute" :item="this.items[0]" @openItem="itemInfo" @popUp="popUp"/>-->
         <router-view>
         </router-view>
         <loginModal @register="registration" @auth="reload"/>
@@ -127,14 +126,13 @@
 <script>
     // TODO : remove test method
 	import {mapMutations} from "vuex";
-	import {LOGOUT} from "@/store/modules/security";
+    import {LOGOUT, APPROVE} from "@/store/modules/security";
 	import axios from "axios";
     import loginModal from '@/components/common/LoginModal';
     import sortingComponent from '@/components/common/SortingComponent';
-    /*import itemComponent from '@/components/movie/ItemComponent';*/
     import itemContainer from '@/components/movie/ItemContainer';
     import registrationModal from '@/components/common/RegistrationModal';
-	import {API_SERVER_PATH} from "@/utils/constants";
+    import {API_SERVER_PATH, /*ROLE_ADMIN, ROLE_USER*/} from "@/utils/constants";
 
 	export default {
 		name: "MainPage",
@@ -142,12 +140,14 @@
             loginModal,
             registrationModal,
             sortingComponent,
-            /*itemComponent,*/
             itemContainer
         },
 		data() {
 			return {
-                oldPath: "",
+                showMessage: false,
+                sortInput: 1,
+                genresInput: [],
+                oldPath: '',
                 cleanInputs: 0,
                 rootRoute: "",
                 searchData: "",
@@ -167,22 +167,21 @@
                 items: []
 			}
 		},
-        watch: {
-            page: function() {
-                console.log('Page changed');
-            }
-        },
 		methods: {
 			...mapMutations('security', {
-				logout: LOGOUT
+				logout: LOGOUT,
+                approve: APPROVE
 			}),
+            scrollToTop() {
+                window.scrollTo(0,0);
+            },
             itemInfo(id) {
                 this.isList = false;
                 let route = this.rootRoute;
                 route = route.substring(1);
                 this.$router.push('/' + route.substring(0, route.indexOf('/') + 1) + id);
-                //this.path = this.$router.history.getCurrrentLocation();
-                //console.log(this.path);
+                this.oldPath = this.$router.history.getCurrentLocation();
+                console.log('MOVIE ROUTE ' + this.oldPath);
             },
             authorization() {
                 this.$refs.authBtn.click();
@@ -191,40 +190,53 @@
                 this.$refs.regBtn.click();
             },
             move(forward) {
-                // check page not overloaded
-                // check current page + send responsive method = fetchData()
                 if (forward && this.items.length === 20) this.page++;
                 else if (!forward && this.page > 1) this.page--;
                 else return false;
+                this.fetchData();
+                this.scrollToTop();
             },
-            /*
-            test() {
-                var object = {
-                    description : "Продолжение истории маленького и непоседливого кролика по имени Питер. Беатрис, Томас и крольчата, наконец, находят общий язык и начинают спокойную и размеренную жизнь за городом. Однако Питеру это совсем не по нраву: его мятежная душа требует приключений, и он отправляется на их поиски в большой город, туда, где его проделки уж точно оценят по достоинству. Тем временем, члены его большой дружной семьи, рискуя жизнью, отправляются вслед за Питером, чтобы вернуть его домой, и теперь беглецу предстоит решить, что же для него важнее всего.",
-                    duration : 0,
-                    futured : false,
-                    icon : "/rabbit.jpg",
-                    id : 522478,
-                    name : "Кролик Питер 2",
-                    rate : 0
-                };
-                this.items.push(object);
-            },*/
-            sort(sortValue, genresValues) {
+            sort(sortValue, genresValues, newPage) {
+                this.fetchError = "";
                 this.searchData = "";
                 let genres = "";
-                genresValues.forEach((genre) => genres += (genre + ","));
-                genres = genres.substring(0, genres.length - 1);
-                axios.get(API_SERVER_PATH + this.rootRoute, {
-                    headers: {
-                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
-                    },
-                    params: {
+                if (newPage) {
+                    if (this.genresInput !== genresValues || this.sortInput !== sortValue) {
+                        this.sortInput = sortValue;
+                        this.genresInput = genresValues;
+                        if (this.page !== 1) {
+                            this.page = 1;
+                            return;
+                        }
+                    }
+                }
+                this.sortInput = sortValue;
+                this.genresInput = genresValues;
+                let params = {};
+                if (genresValues.length > 0) {
+                    genresValues.forEach((genre) => genres += (genre + ","));
+                    genres = genres.substring(0, genres.length - 1);
+                    params = {
                         p: this.page - 1,
                         s: sortValue,
                         g: genres
                     }
+                }
+                else
+                    params = {
+                        p: this.page - 1,
+                        s: sortValue
+                    }
+                console.log("DATA FROM");
+                console.log(this.rootRoute);
+                axios.get(API_SERVER_PATH + this.rootRoute, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                    params
                 }).then((response) => {
+                    console.log('DATA RECEIVED');
+                    console.log(response.data);
                     this.items = response.data;
                 }).catch((error) => {
                     console.log(error);
@@ -243,19 +255,133 @@
                 });
             },
             fetchData() {
-                console.log('FETCHING');
+                let path = this.$router.history.getCurrentLocation();
+                if (path.includes('search')) {
+                    this.search();
+                }
+                else if (path.includes('futured')) {
+                    this.future();
+                }
+                else if (path.includes('recommended')) {
+                    this.recommend();
+                }
+                else if (path.includes('rated')) {
+                    this.rated();
+                }
+                else {
+                    this.sort(this.sortInput, this.genresInput, false);
+                }
+            },
+            sendFut(itemType, id, isUpdate) {
+                axios.post(API_SERVER_PATH + `/${itemType}/${id}/rate`, 0, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                }).then(() => {
+                    if (isUpdate) {
+                        this.fetchData();
+                    }
+                    else {
+                        console.log('UPDATE ITEM VIEW ONLY?');
+                        // call itemInfo again?
+                    }
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+            sendRate(itemType, id, newRate, oldRate) {
+                console.log("SEND RATE");
+                console.log(newRate);
+                axios.post(API_SERVER_PATH + `/${itemType}/${id}/rate`, newRate, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                }).then((response) => {
+                    if (oldRate >= 0 && response.data.rate === 0) {
+                        this.showMessage = true;
+                        setTimeout(() => this.showMessage = false, 4000);
+                    }
+                    this.fetchData();
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+            future() {
+                this.items = [];
+                if (!this.checkAuthorizedAndError()) return;
+                axios.get(API_SERVER_PATH + `${this.rootRoute}/future`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                    params: {
+                        p: this.page - 1
+                    }
+                }).then((response) => {
+                    this.items = response.data;
+                    if (this.items.length === 0) this.fetchError = "Не найдено отложенных произведений";
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+            recommend() {
+                this.items = [];
+                if (!this.checkAuthorizedAndError()) return;
+                axios.get(API_SERVER_PATH + `${this.rootRoute}/recommended`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                    params: {
+                        p: this.page - 1
+                    }
+                }).then((response) => {
+                    this.items = response.data;
+                    console.log(this.items);
+                    if (!this.items || this.items.length === 0) this.fetchError = "Сначала необходимо оценить произведения";
+                }).catch((error) => {
+                    this.fetchError = "Ошибка сервера"
+                    console.log(error);
+                });
+            },
+            rated() {
+                this.items = [];
+                if (!this.checkAuthorizedAndError()) return;
+                axios.get(API_SERVER_PATH + `${this.rootRoute}/rated`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.$store.getters['security/token']
+                    },
+                    params: {
+                        p: this.page - 1
+                    }
+                }).then((response) => {
+                    this.items = response.data;
+                    if (this.items.length === 0) this.fetchError = "Не найдено оцененных произведений";
+                }).catch((error) => {
+                    console.log(error);
+                });
+            },
+            checkAuthorizedAndError() {
+                if (this.$store.getters['security/token'].length === 0) {
+                    this.fetchError = "Необходимо авторизоваться";
+                    return false;
+                }
+                return true;
             },
             changeRoute() {
-                console.log("routeChanged");
+                console.log('CHANGED ROUTE');
                 let route = this.$router.history.getCurrentLocation().substring(1);
                 route = route.substring(0, route.indexOf('/'));
                 this.rootRoute = '/'+ route + '/list';
-                this.fetchData();
+                console.log(this.rootRoute);
             },
             changeState() {
-                this.page = 1;
                 this.cleanInputs++;
                 this.searchData = "";
+                if (this.sortInput !== 1 || this.genresInput.length !== 0) {
+                    this.genresInput = {};
+                    this.sortInput = 1;
+                }
+                this.page = 1;
+                this.fetchData();
             },
             changeSelected() {
                 (this.$refs[this.rootRoute]).childNodes[0].addClass('active');
@@ -269,19 +395,20 @@
                         this.fetchError = '';
                         this.user = Object.assign({}, this.user, response.data);
                     }).catch((error) => {
-                        if (error.response) {
-                            this.fetchError = error.response.data;
-                        } else if (error.request) {
+                        if (error.request) {
                             this.fetchError = "Сервер не отвечает";
                         }
                     })
             },
             reload() {
-                if (this.$store.getters['security/oldId'] != this.$store.getters['security/id']) this.$forceUpdate();
+                if (this.$store.getters['security/oldId'] != this.$store.getters['security/id']) {
+                    //this.$forceUpdate();
+                    this.$router.push('/movie/list');
+                }
             },
             search() {
                 if (this.searchData.length == 0) return false;
-                this.$router.push(this.rootRoute + '/search');
+                this.$router.push(`${this.rootRoute}/search`);
                 this.cleanInputs++;
                 axios.get(API_SERVER_PATH + this.rootRoute + '/search', {
                     params: {
@@ -293,12 +420,9 @@
                     }
                 }).then((response) => {
                     this.items = response.data;
-                    console.log(response.data);
+                    /*console.log(response.data);*/
                 }).catch((error) => {
-                    if (error.response) {
-                        this.fetchError = error.response.data;
-                        console.log('');
-                    } else if (error.request) {
+                    if (error.request) {
                         this.fetchError = "Сервер не отвечает";
                     }
                 })
@@ -306,19 +430,31 @@
 		},
 		mounted() {
             console.log('mounted');
+            console.log(this.items);
             this.isList = true;
+            this.oldPath = this.$router.history.getCurrentLocation();
             this.changeRoute();
             if (this.$store.getters['security/id']) {
                 this.sendLogin();
             }
+            this.fetchData();
 		},
         updated() {
-            console.log('updated');
+            console.log('MOVIE updated');
+            console.log(this.oldPath);
             if (this.$router.history.getCurrentLocation().includes('list')) this.isList = true;
             if (this.$store.getters['security/id'] && this.$store.getters['security/id'] != this.user.id) this.sendLogin();
-            if (this.oldPath !== this.$router.history.getCurrentLocation()) {
+            if (this.oldPath !== this.$router.history.getCurrentLocation() && /\d/.test(this.oldPath)) {
+                console.log('OLDPATH INTO');
                 this.oldPath = this.$router.history.getCurrentLocation();
+                this.fetchError = "";
                 this.fetchData();
+            }
+            if (this.$store.getters['security/oldId'] !== this.$store.getters['security/id']){
+                this.approve();
+                this.page = 1;
+                this.fetchData();
+                this.fetchError = "";
             }
         }
 	}
