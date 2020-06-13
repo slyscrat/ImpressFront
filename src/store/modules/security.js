@@ -40,7 +40,6 @@ const mutations = {
 
 	[APPROVE](state) {
 		state.oldId = state.id;
-		console.log('1 ' + state.oldId);
 	},
 
 	[LOGOUT](state) {

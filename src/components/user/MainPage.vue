@@ -1,140 +1,153 @@
 <template>
-    <div class="items-container">
-        <b-navbar toggleable="sm" type="dark" variant="dark">
-            <img :src="images.logo" style="cursor:pointer" @click="$router.push('/movie/list')"/>
+    <div>
+        <div class="items-container">
+            <div class="headFix">
+            <b-navbar toggleable="sm" type="dark" variant="dark" style="background-color: #1e2a32">
+                <img :src="images.logo" style="cursor:pointer" @click="changeRouteImg(); changeState(); scrollToTop();"/>
 
-            <b-navbar-nav class="notes" fill fixed="top">
-                <b-nav-item exact
-                            exact-active-class="active"
-                            v-bind:class="{active: rootRoute.includes('movie')}"
-                            to="/movie/list"
-                            ref = "/movie/list"
-                            @click="changeRoute(); changeState(); scrollToTop();"
-                >
-                    Фильмы
-                </b-nav-item>
-                <b-nav-item exact
-                            exact-active-class="active"
-                            v-bind:class="{active: rootRoute.includes('game')}"
-                            to="/game/list"
-                            ref = "/game/list"
-                            @click="changeRoute(); changeState(); scrollToTop();"
-                >
-                    Игры
-                </b-nav-item>
-                <b-nav-item exact
-                            exact-active-class="active"
-                            v-bind:class="{active: rootRoute.includes('book')}"
-                            to="/book/list"
-                            ref = "/book/list"
-                            @click="changeRoute(); changeState(); scrollToTop();"
-                >
-                    Книги
-                </b-nav-item>
-            </b-navbar-nav>
-            <b-navbar-nav>
-                <form class="form-inline" v-on:keydown.enter.prevent="search">
-                    <input class="form-control mr-sm-2" type="search" placeholder="Поиск" v-model="searchData">
-                    <b-button @click="search" class="text-hide">
-                        <img :src="images.search"/>
-                    </b-button>
-                </form>
-            </b-navbar-nav>
-            <b-navbar-nav class="fixedSize">
-                <div v-if="!this.$store.getters['security/id']">
-                    <b-button v-b-modal.loginModal class="my-button" ref="authBtn">
-                        Войти
-                    </b-button>
-                    <b-button v-b-modal.registrationModal class="link" ref="regBtn">
-                        Регистрация
-                    </b-button>
+                <b-navbar-nav class="notes" fill fixed="top">
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                v-bind:class="{active: rootRoute.includes('movie')}"
+                                to="/movie/list"
+                                ref = "/movie/list"
+                                @click="changeRoute(); changeState(); scrollToTop();"
+                    >
+                        Фильмы
+                    </b-nav-item>
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                v-bind:class="{active: rootRoute.includes('game')}"
+                                to="/game/list"
+                                ref = "/game/list"
+                                @click="changeRoute(); changeState(); scrollToTop();"
+                    >
+                        Игры
+                    </b-nav-item>
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                v-bind:class="{active: rootRoute.includes('book')}"
+                                to="/book/list"
+                                ref = "/book/list"
+                                @click="changeRoute(); changeState(); scrollToTop();"
+                    >
+                        Книги
+                    </b-nav-item>
+                </b-navbar-nav>
+                <b-navbar-nav>
+                    <form class="form-inline" v-on:keydown.enter.prevent="search">
+                        <input class="form-control mr-sm-2" type="search" placeholder="Поиск" v-model="searchData">
+                        <b-button @click="search" class="text-hide">
+                            <img :src="images.search" onmouseover=""/>
+                        </b-button>
+                    </form>
+                </b-navbar-nav>
+                <b-navbar-nav class="fixedSize">
+                    <div v-if="!this.$store.getters['security/id']">
+                        <b-button v-b-modal.loginModal class="my-button" ref="authBtn">
+                            Войти
+                        </b-button>
+                        <b-button v-b-modal.registrationModal class="link" ref="regBtn">
+                            Регистрация
+                        </b-button>
+                    </div>
+                    <b-nav-item-dropdown v-else right class="userInfo">
+                        <template v-slot:button-content>
+                            {{user.nickName}}
+                            <img :src="images.user" width="22%">
+                        </template>
+                        <b-dropdown-item disabled>
+                            {{user.name}}
+                        </b-dropdown-item>
+                        <b-dropdown-item disabled>
+                            {{user.email}}
+                        </b-dropdown-item>
+                        <b-dropdown-item @click="sendLogout">Выйти</b-dropdown-item>
+                    </b-nav-item-dropdown>
+                </b-navbar-nav>
+
+            </b-navbar>
+            <b-navbar type="dark" variant="dark" class="lowerNavbar">
+                <b-navbar-nav class="notes" fill>
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                :to= "this.rootRoute"
+                                @click="changeState(); scrollToTop();"
+                    >
+                        Все
+                    </b-nav-item>
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                :to= "this.rootRoute + '/futured'"
+                                @click="changeState(); scrollToTop();"
+                    >
+                        Отложенные
+                    </b-nav-item>
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                :to= "this.rootRoute + '/rated'"
+                                @click="changeState(); scrollToTop();"
+                    >
+                        Оцененные
+                    </b-nav-item>
+                    <b-nav-item exact
+                                exact-active-class="active"
+                                :to= "this.rootRoute + '/recommended'"
+                                @click="changeState(); scrollToTop();"
+                    >
+                        Рекомендованные
+                    </b-nav-item>
+                </b-navbar-nav>
+            </b-navbar>
+            </div>
+            <main v-show="isList">
+                <sortingComponent :key="cleanInputs" :type="this.rootRoute" @search="sort"/>
+                <span :class="[showMessage && isList ? 'test' : '', 'popUp']"
+                      @mouseover="showMessage=false">У произведения есть заметка, поэтому оно отмечено Отложенным</span>
+                <div class="itemContainer">
+                    <itemContainer :render="this.isList" :items="this.items" :searchData="this.searchData" :message="this.fetchError"
+                                   @openItem="itemInfo" @fut="sendFut" @rat="sendRate"/>
+                    <div v-if="isList && (items.length === 20 || page > 1)" class="pages">
+                        <img :src="images.left" @click="move(false)"
+                             :class="{unactiveImg: this.page < 2, activeImg: this.page > 1}"
+                             style="width:3%"/>
+                        <span style="margin: 0 10px">
+                            Страница {{this.page}}
+                        </span>
+                        <img :src="images.right" @click="move(true)"
+                             :class="{unactiveImg: this.items.length < 20, activeImg: this.items.length === 20}"
+                             style="width:3%"/>
+                    </div>
                 </div>
-                <b-nav-item-dropdown v-else-if="this.$store.getters['security/id']" right>
-                    <template v-slot:button-content>
-                        {{user.nickName}}
-                        <img :src="images.user" width="15%">
-                    </template>
-                    <b-dropdown-item disabled>
-                        {{user.name}}
-                    </b-dropdown-item>
-                    <b-dropdown-item disabled>
-                        {{user.email}}
-                    </b-dropdown-item>
-                    <b-dropdown-item @click="sendLogout">Выйти</b-dropdown-item>
-                </b-nav-item-dropdown>
-            </b-navbar-nav>
+            </main>
 
-        </b-navbar>
-        <b-navbar type="dark" variant="dark" class="lowerNavbar">
-            <b-navbar-nav class="notes" fill>
-                <b-nav-item exact
-                            exact-active-class="active"
-                            :to= "this.rootRoute"
-                            @click="changeState(); scrollToTop();"
-                >
-                    Все
-                </b-nav-item>
-                <b-nav-item exact
-                            exact-active-class="active"
-                            :to= "this.rootRoute + '/futured'"
-                            @click="changeState(); scrollToTop();"
-                >
-                    Отложенные
-                </b-nav-item>
-                <b-nav-item exact
-                            exact-active-class="active"
-                            :to= "this.rootRoute + '/rated'"
-                            @click="changeState(); scrollToTop();"
-                >
-                    Оцененные
-                </b-nav-item>
-                <b-nav-item exact
-                            exact-active-class="active"
-                            :to= "this.rootRoute + '/recommended'"
-                            @click="changeState(); scrollToTop();"
-                >
-                    Рекомендованные
-                </b-nav-item>
-            </b-navbar-nav>
-        </b-navbar>
-        <sortingComponent :key="cleanInputs" :render="this.isList" :type="this.rootRoute" @search="sort"/>
-        <span v-if="showMessage && isList">У произведения есть заметка, поэтому оно отмечено Отложенным</span>
-        <itemContainer :render="this.isList" :items="this.items" :searchData="this.searchData" :message="this.fetchError"
-                       @openItem="itemInfo" @fut="sendFut" @rat="sendRate"/>
-        <div v-if="this.isList">
-            <img :src="images.left" @click="move(false)"
-                 :class="{unactiveImg: this.page < 2, activeImg: this.page > 1}"
-                 style="width:1.8%"/>
-            <span>
-                Страница {{this.page}}
-            </span>
-            <img :src="images.right" @click="move(true)"
-                 :class="{unactiveImg: this.items.length < 20, activeImg: this.items.length === 20}"
-                 style="width:1.8%"/>
+            <div
+                :class="{myFooter: items.length > 4 && isList, myFooterFixed: items.length < 5}"
+                v-if="isList">
+                2020 Дипломная работа Бутышкиса Ильи
+            </div>
+            <router-view>
+            </router-view>
+            <loginModal @register="registration" @auth="reload"/>
+            <registrationModal @auth="authorization"/>
         </div>
-        <div toggleable="sm" type="dark" variant="dark" class="myFooter">
-            2020 Дипломная работа Бутышкиса Ильи
-        </div>
+        <div v-if="showMessage">
 
-        <router-view>
-        </router-view>
-        <loginModal @register="registration" @auth="reload"/>
-        <registrationModal @auth="authorization"/>
+        </div>
     </div>
 </template>
 
 <script>
-    // TODO : remove test method
-	import {mapMutations} from "vuex";
-    import {LOGOUT, APPROVE} from "@/store/modules/security";
-	import axios from "axios";
-    import loginModal from '@/components/common/LoginModal';
+    import {mapMutations} from "vuex";
+    import {APPROVE, LOGOUT} from "@/store/modules/security";
+    import axios from "axios";
+    import loginModal from '@/components/common/auth/LoginModal';
     import sortingComponent from '@/components/common/SortingComponent';
-    import itemContainer from '@/components/movie/ItemContainer';
-    import registrationModal from '@/components/common/RegistrationModal';
-    import {API_SERVER_PATH, /*ROLE_ADMIN, ROLE_USER*/} from "@/utils/constants";
+    import itemContainer from '@/components/common/item/ItemContainer';
+    import registrationModal from '@/components/common/auth/RegistrationModal';
+    import {API_SERVER_PATH,} from "@/utils/constants";
 
-	export default {
+    export default {
 		name: "MainPage",
         components: {
             loginModal,
@@ -154,8 +167,6 @@
 				user: {},
                 isList: "",
                 page: 1,
-                itemToShow: null,
-                showModal: false,
                 images: {
                     logo: require('@/assets/static/0_log.png'),
                     search: require('@/assets/static/0_searc.png'),
@@ -172,6 +183,15 @@
 				logout: LOGOUT,
                 approve: APPROVE
 			}),
+            test(event) {
+                console.log(event.type);
+                console.log(event.target);
+                let element = event.target;
+                if (event.type === 'mouseover')
+                    event.target.className += " test";
+                else
+                    element.className = event.target.className.replace(' test','');
+            },
             scrollToTop() {
                 window.scrollTo(0,0);
             },
@@ -250,6 +270,8 @@
                 }).then(() => {
                     this.logout();
                     this.user = {};
+                    this.reload();
+                    this.fetchData();
                 }).catch((error) => {
                     console.log(error);
                 });
@@ -272,19 +294,13 @@
                     this.sort(this.sortInput, this.genresInput, false);
                 }
             },
-            sendFut(itemType, id, isUpdate) {
+            sendFut(itemType, id) {
                 axios.post(API_SERVER_PATH + `/${itemType}/${id}/rate`, 0, {
                     headers: {
                         'Authorization': 'Bearer ' + this.$store.getters['security/token']
                     },
                 }).then(() => {
-                    if (isUpdate) {
-                        this.fetchData();
-                    }
-                    else {
-                        console.log('UPDATE ITEM VIEW ONLY?');
-                        // call itemInfo again?
-                    }
+                    this.fetchData();
                 }).catch((error) => {
                     console.log(error);
                 });
@@ -366,8 +382,14 @@
                 }
                 return true;
             },
+            changeRouteImg(){
+                this.$router.push('/movie/list');
+                this.changeRoute();
+            },
             changeRoute() {
                 console.log('CHANGED ROUTE');
+                this.fetchError = '';
+                this.searchData = '';
                 let route = this.$router.history.getCurrentLocation().substring(1);
                 route = route.substring(0, route.indexOf('/'));
                 this.rootRoute = '/'+ route + '/list';
@@ -401,14 +423,16 @@
                     })
             },
             reload() {
-                if (this.$store.getters['security/oldId'] != this.$store.getters['security/id']) {
+                /*if (this.$store.getters['security/oldId'] != this.$store.getters['security/id']) {*/
                     //this.$forceUpdate();
                     this.$router.push('/movie/list');
-                }
+                    this.changeRoute();
+                /*}*/
             },
             search() {
                 if (this.searchData.length == 0) return false;
                 this.$router.push(`${this.rootRoute}/search`);
+                window.scrollTo(0,0);
                 this.cleanInputs++;
                 axios.get(API_SERVER_PATH + this.rootRoute + '/search', {
                     params: {
@@ -420,7 +444,6 @@
                     }
                 }).then((response) => {
                     this.items = response.data;
-                    /*console.log(response.data);*/
                 }).catch((error) => {
                     if (error.request) {
                         this.fetchError = "Сервер не отвечает";
@@ -431,8 +454,8 @@
 		mounted() {
             console.log('mounted');
             console.log(this.items);
-            this.isList = true;
             this.oldPath = this.$router.history.getCurrentLocation();
+            this.isList = this.oldPath.includes('list');
             this.changeRoute();
             if (this.$store.getters['security/id']) {
                 this.sendLogin();
@@ -444,11 +467,13 @@
             console.log(this.oldPath);
             if (this.$router.history.getCurrentLocation().includes('list')) this.isList = true;
             if (this.$store.getters['security/id'] && this.$store.getters['security/id'] != this.user.id) this.sendLogin();
-            if (this.oldPath !== this.$router.history.getCurrentLocation() && /\d/.test(this.oldPath)) {
+            if (this.oldPath !== this.$router.history.getCurrentLocation()) {
                 console.log('OLDPATH INTO');
+                if (/\d/.test(this.oldPath)) {
+                    this.fetchData();
+                }
                 this.oldPath = this.$router.history.getCurrentLocation();
                 this.fetchError = "";
-                this.fetchData();
             }
             if (this.$store.getters['security/oldId'] !== this.$store.getters['security/id']){
                 this.approve();
@@ -461,8 +486,27 @@
 </script>
 
 <style scoped>
+
+    .popUp {
+        cursor: default;
+        position: fixed;
+        bottom: 0px;
+        left: 29.42%;
+        background-color: #6d7e8c;
+        color: #eadcc7;
+        height: 25px;
+        position: center;
+        width: 40%;
+        text-align: center;
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        z-index: 1000;
+        opacity: 0;
+        transition: .55s opacity;
+    }
+
     .test {
-        background-color: yellow;
+        opacity: 1;
     }
 
     .activeImg {
@@ -475,12 +519,13 @@
     }
 
     .items-container {
-        background-color: whitesmoke; /*#38444c;*/
+        background-color: #38444c;
         position: absolute;
         top: 0;
         left: 0;
-        height: 100%;
+        min-height: 100%;
         width: 100%;
+        z-index: -2;
     }
 
     .navbar-nav > li {
@@ -488,13 +533,23 @@
         position: relative;
     }
 
-    /* TODO */
     .myFooter {
+        bottom: 0;
+    }
+
+    .myFooterFixed {
+        position: fixed;
+        bottom: 0;
+    }
+
+    .myFooter,
+    .myFooterFixed {
         color: #BDD5EC;
-        opacity: 0.5;
-        background-color: #292b2c;
+        background-color: #1e2a32;
         text-align: right;
-        height: 5%;
+        padding-right: 5%;
+        width: 100%;
+        height: 25px;
     }
 
     input[type="text"],
@@ -513,7 +568,7 @@
     select.form-control:focus {
         -webkit-box-shadow: none;
         box-shadow: none;
-        color: red;
+        color: #bdd5ec;
     }
 
     .navbar-nav .active::after {
@@ -532,8 +587,21 @@
         justify-content: space-around;
     }
 
+    .itemContainer ::v-deep {
+        margin-left: 23%;
+        margin-top: 8.3%;
+        padding: 0;
+    }
+
     .lowerNavbar {
-        opacity: 65%;
+        background-color: #27333b;
+    }
+
+    .pages {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #eadcc7;
     }
 
     .notes {
@@ -544,10 +612,22 @@
     }
 
     .fixedSize {
-        width: 20%;
-        background-color: green;
+        width: 14.25%;
     }
 
+    .userInfo {
+        padding-left: 60%;
+    }
+
+    main {
+        padding: 1.5% 7%;
+    }
+
+    .headFix {
+        position: fixed;
+        width: 100%;
+        z-index: 100;
+    }
 
     .fixed-size::after {
         display: none;

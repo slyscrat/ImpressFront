@@ -1,29 +1,29 @@
 <template>
     <div>
-        <div class="myCard" :item="item" :key="render">
-            <img :src="this.source + this.item.icon" class="clickable" :class="this.itemType" @click="openItem"/>
-            <!--<img :src="images.rabbit" class="clickable" :class="this.itemType" @click="openItem"/>-->
-            <div>
+        <div :class="{myCard: itemType !== 'game', gameCard: itemType === 'game'}" :item="item">
+            <img :src="this.source + this.item.icon" class="clickable" :class="this.itemType" @click="openItem" alt=""/>
+            <div :class="{images: itemType !== 'game', gameImages: itemType === 'game'}">
                 <img :src="images.mark" class="smallImg" @click="future"
                      :class="{ forFuture: this.rating === 0,
                      notForFuture: this.rating !== 0,
-                     clickable: this.$store.getters['security/token'].length > 0}" />
+                     clickable: this.$store.getters['security/token'].length > 0,
+                     }"
+                     @mouseover="changeClass"
+                     @mouseout="changeClass"
+                 alt=""/>
                 <span @click="rate">
                     <starRating :star-size="25" v-model="rating" :show-rating="false"
-                                :read-only="this.$store.getters['security/token'].length === 0"/>
+                                :read-only="this.$store.getters['security/token'].length === 0" :class="{star: itemType === 'game'}"/>
                 </span>
             </div>
             <span class="clickable myText" @click="openItem">{{this.item.name}}</span>
-            <!--<span class="clickable myText" @click="openItem">{{this.innerItem.name}}</span>-->
-            <!-- change text to Гарри Поттер и философский камень -->
         </div>
     </div>
 </template>
 
 <script>
-    import {/*API_SERVER_PATH, */SMALL_MOVIE_IMG} from "@/utils/constants"
+    import {SMALL_MOVIE_IMG} from "@/utils/constants"
     import starRating from "vue-star-rating";
-    /*import axios from "axios";*/
 
     export default {
         name: "ItemComponent",
@@ -33,7 +33,7 @@
         },
         data() {
             return {
-                render: 0,
+                clicked: false,
                 source: "",
                 itemType: "",
                 rating: -1,
@@ -45,40 +45,11 @@
             }
         },
         watch: {
-            /*type: function() {
-                this.source = '';
-                this.itemType = '';
-                let itemT = this.type.substring(1);
-                this.itemType = itemT.substring(0, itemT.indexOf('/'));
-                if (this.itemType === 'movie') {
-                    this.source = SMALL_MOVIE_IMG;
-                }
-                console.log(this.itemType);
-                console.log('TYPE GET');
-            },*/
             item: function () {
                 this.rating = this.item.rate;
-                console.log("ITEM CHANGED");
-                console.log(this.item);
             }
-            /*item: function() {
-                console.log('ITEM GET');
-                this.source = "";
-                let type = this.$router.history.getCurrentLocation();
-                type = type.substring(1);
-                this.itemType = type.substring(0, type.indexOf('/'));
-                if (this.itemType === 'movie') this.source = SMALL_MOVIE_IMG;
-                if (this.itemType === 'book' && this.item.icon.includes('cdn')) this.item.icon = this.images.book;
-                console.log(this.item.name);
-            }*//*,
-            innerItem: function() {
-                this.oldRating = this.innerItem.rate;
-                this.rating = this.innerItem.rate;
-            }*/
         },
         mounted() {
-            console.log("ITEM MOUNTED");
-            console.log(this.item);
             this.source = '';
             let type = this.$router.history.getCurrentLocation();
             type = type.substring(1);
@@ -89,7 +60,22 @@
             this.oldRating = this.item.rate;
         },
         methods: {
+            swapClass(element) {
+                element.className = element.className.includes('forFuture') ?
+                    element.className.replace('forFuture','notForFuture') :
+                    element.className.replace('notForFuture', 'forFuture');
+            },
+            changeClass(event) {
+                if (!event.target.className.includes('clickable')) return;
+                if (event.type === 'mouseover')
+                    this.swapClass(event.target);
+                else {
+                    if (!this.clicked) this.swapClass(event.target);
+                    this.clicked = false;
+                }
+            },
             future() {
+                this.clicked = !this.clicked;
                 if (!this.authorityCheck()) return false;
                 if (this.rating > 0) return false;
                 this.$emit('fut', this.itemType, this.item.id);
@@ -106,10 +92,6 @@
             authorityCheck() {
                 return this.$store.getters['security/token'].length > 0;
             }
-        },
-        updated() {
-            console.log("ITEM UPDATED");
-            console.log(this.item);
         }
     }
 </script>
@@ -118,11 +100,23 @@
     .movie, .book {
         width: 220px;
         height: 320px;
+    }
+
+    .movie,
+    .book,
+    .game {
         border-radius: 10px;
     }
 
+    .gameCard {
+        width: 460px;
+        heigth: 300px;
+        margin-bottom: 30px;
+    }
+
     .smallImg {
-        width: 7%
+        width: 18px;
+        padding-top: 0.5px;
     }
 
     .forFuture {
@@ -133,9 +127,32 @@
         opacity: 0.5;
     }
 
+    .star {
+        margin-left: 30px;
+    }
+
+    .gameImages {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        height: 26px;
+    }
+
+    .images {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        height: 26px;
+    }
+
     .myText {
         text-align: center;
         overflow: hidden;
+        color: #eadcc7;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;

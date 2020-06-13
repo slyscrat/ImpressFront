@@ -24,22 +24,23 @@
             </b-row>
             <b-row class="login-form-elem">
                 <b-col offset="1" sm="10">
-                    <b-input-group class="mb-2 mr-sm-2 mb-sm-0" prepend="Пароль">
+                    <b-input-group class="eyeInput" prepend="Пароль">
                         <b-input id="password-input"
                                  :type="passwordShow"
                                  v-model="password"
                                  @click="clearError"
+                                 style="border-top-right-radius: 0.25rem; border-bottom-right-radius: 0.25rem"
                         />
+                        <img ref="confirmEye" type="confirm" :src="images.closed" @click="switchVisibility" alt="">
                     </b-input-group>
-                    <img ref="confirmEye" type="confirm" :src="images.closed" @click="switchVisibility" width="12%">
                 </b-col>
             </b-row>
             <b-row class="login-form-elem">
                 <b-col class="text-center">
                     <a
-                            style="color: blue;"
-                            onmouseover="this.style.color='red'"
-                            onmouseout="this.style.color='blue'"
+                            style="color: #6d7f8f; cursor: pointer;"
+                            onmouseover="this.style.color='#BDD5EC'"
+                            onmouseout="this.style.color='#6d7f8f'"
                             @click="registration"
                             type="submit"
                     >
@@ -49,7 +50,6 @@
                               size="lg"
                               type="submit"
                               v-if="!authenticationInProgress"
-                              variant="primary"
                     >
                         Войти
                     </b-button>
@@ -69,7 +69,6 @@
     import {API_SERVER_PATH, ROLE_ADMIN, ROLE_USER} from "@/utils/constants";
     import axios from "axios";
     import {AUTHENTICATE, LOGOUT} from "@/store/modules/security";
-    /*import {REG, CLEAN} from "@/store/modules/helpers";*/
     import {mapMutations} from "vuex";
 
     export default {
@@ -82,8 +81,8 @@
                 authenticationError: "",
                 authenticationInProgress: false,
                 images: {
-                    open: require('@/assets/static/0_open.png'),
-                    closed: require('@/assets/static/0_close.png')
+                    open: require('@/assets/static/0_eye_open.png'),
+                    closed: require('@/assets/static/0_eye_close.png')
                 }
             }
         },
@@ -91,16 +90,12 @@
             ...mapMutations('security', {
                 authenticate: AUTHENTICATE,
                 logout: LOGOUT
-            }),/*
-            ...mapMutations('helpers', {
-                register: REG,
-                clean: CLEAN
-            }),*/
+            }),
             clearError(){
                 this.authenticationError = "";
             },
             checkEmail() {
-                if (!this.email.match('^([A-Za-z]{1,})[@]([A-Za-z]{1,})[.]([A-Za-z]{1,})$')) this.authenticationError = "Неправильный адрес почты";
+                if (!this.email.match('^([A-Za-z1-9]{1,})[@]([A-Za-z]{1,})[.]([A-Za-z]{1,})$')) this.authenticationError = "Неправильный адрес почты";
                 else this.authenticationError = "";
             },
             closeModal() {
@@ -111,7 +106,7 @@
                 })
             },
             switchVisibility(event) {
-                let hide = event.target.src == this.images.open;
+                let hide = event.target.src === this.images.open;
                 event.target.src = hide ? this.images.closed : this.images.open;
                 this.passwordShow = hide ? "password" : "text";
             },
@@ -136,23 +131,14 @@
                         role: response.data['userId'] === 1 ? ROLE_ADMIN : ROLE_USER,
                         token: response.data['token'],
                     });
-                    //this.clean();
                     this.$emit('auth', true);
                     this.closeModal();
-                    /*if (response.data['userId'] === 1)
-                        this.$router.push('/admin/movie/list');
-                    else
-                        this.$router.push('/movie/list');*/
-
-/*                    */
-
                 }).catch((error) => {
                     this.authenticationInProgress = false;
-                    if (error.response) {
+                    if (error.response)
                         this.authenticationError = "Неверный логин или пароль. Попробуйте еще раз";
-                    } else if (error.request) {
+                    else if (error.request)
                         this.authenticationError = "Сервер не отвечает";
-                    }
                     this.logout();
                 });
             }
@@ -161,16 +147,24 @@
 </script>
 
 <style scoped>
+    img {
+        width: 28px;
+        height: 13%;
+        cursor:pointer;
+        margin-left: 20px;
+        margin-top: 1.5%;
+    }
+
+    a {
+        margin-right: 30px;
+    }
+
     .login-container {
         border-radius: 30px;
         padding: 2% 0;
         margin: 5% 35%;
         background-color: whitesmoke;
         width: 30%;
-    }
-
-    .input-group>.input-group-prepend {
-        flex: 0 0 28%;
     }
 
     .input-group .input-group-text {
@@ -181,6 +175,30 @@
     .login-form-elem {
         padding: 10px 0 5px 0;
         margin: 10px;
+    }
+
+    .eyeInput {
+        width: 114.5%;
+    }
+
+    .input-group-prepend {
+        width: 100px;
+    }
+
+    button {
+        color: #eadcc7;
+        background-color: #6d7e8c;
+        height: 45px;
+    }
+
+    button:focus {
+        background-color: #546f87;
+        color: #eadcc7;
+    }
+
+    button:hover {
+        background-color: #889bac;
+        color: #eadcc7;
     }
 
 </style>

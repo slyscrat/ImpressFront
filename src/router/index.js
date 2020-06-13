@@ -2,9 +2,11 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import store from "@/store";
 import {ROLE_ADMIN} from "@/utils/constants";
-import HelloWorld2 from "@/components/HelloWorld2";
-import Movie from "@/components/user/Movie";
-import ItemView from "@/components/common/ItemView"
+import Movie from "@/components/user/MainPage";
+import MovieView from "@/components/movie/MovieView"
+import BookView from "@/components/book/BookView"
+import GameView from "@/components/game/GameView"
+import UserPage from "@/components/admin/UserPage";
 
 Vue.use(VueRouter);
 
@@ -14,10 +16,6 @@ const router = new VueRouter({
 		{
 			path: '/', redirect:'/movie/list'
 		},
-/*		{path: '/!*!/list/recommended', component: Movie},
-		{path: '/!*!/list/rated', component: Movie},
-		{path: '/!*!/list/futured', component: Movie},
-		{path: '/!*!/list/search', component: Movie},*/
 		{
 			path: '/movie', component: Movie,
 			redirect:'/movie/list',
@@ -26,7 +24,7 @@ const router = new VueRouter({
 					path: 'list',
 				},
 				{
-					path: ':id', component: ItemView
+					path: ':id', component: MovieView
 				},
 				{
 					path:'list/rated',
@@ -49,7 +47,7 @@ const router = new VueRouter({
 					path: 'list', props: (route) => ({page: route.query.page})
 				},
 				{
-					path: ':id', component: ItemView
+					path: ':id', component: GameView
 				},
 				{
 					path:'list/rated', props: (route) => ({page: route.query.page})
@@ -72,7 +70,7 @@ const router = new VueRouter({
 					path: 'list',
 				},
 				{
-					path: ':id', component: ItemView
+					path: ':id', component: BookView
 				},
 				{
 					path:'list/rated',
@@ -88,26 +86,13 @@ const router = new VueRouter({
 				}]
 		},
 		{
-			path: '/admin/movie/list', component: HelloWorld2
+			path: '/admin/movie/list', component: UserPage
+		},
+		{
+			path: '/*', redirect: '/movie/list'
 		}
 	],
 });
-
-/*{
-	path: '/game/list', component: Movie,
-	children: [{
-	path:'rated',
-	component: Movie
-},
-	{
-		path: 'futured',
-		component: Movie
-	},
-	{
-		path: 'search',
-		component: Movie
-	}]
-},*/
 
 router.beforeEach((to, from, next) => {
 	let role = store.getters['security/role'];

@@ -1,7 +1,7 @@
 <template>
     <b-modal class="reg-container" id="registrationModal"
     hide-footer hide-header size="lg" @hide="clearFields">
-        <b-form aria-autocomplete="off" autofill="off" autocomplete="off">
+        <b-form>
             <b-row class="reg-form-elem">
                 <b-col class="text-center">
                     <h4>
@@ -38,30 +38,28 @@
                                  type="text"
                                  v-model="nickName"
                                  @click="clearError"
-                                 autocomplete="off"
-                                 autofill="off"
                         />
                     </b-input-group>
                 </b-col>
             </b-row>
             <b-row class="reg-form-elem">
                 <b-col offset="1" sm="10">
-                    <b-input-group class="mb-2 mr-sm-2 mb-sm-0" prepend="Пароль">
+                    <b-input-group class="eyeInput" prepend="Пароль">
                         <b-input ref="password"
                                  :type="passwordShow"
                                  v-model="password"
                                  @click="clearError"
                                  @change="checkPassValid"
                                  @mouseleave="checkPassValid"
-                                 autocomplete="nope"
+                                 style="border-top-right-radius: 0.25rem; border-bottom-right-radius: 0.25rem"
                         />
+                        <img ref="passEye" type="password" :src="images.closed" @click="switchVisibility">
                     </b-input-group>
-                    <img ref="passEye" type="password" :src="images.closed" @click="switchVisibility" width="7%">
                 </b-col>
             </b-row>
             <b-row class="reg-form-elem">
                 <b-col offset="1" sm="10">
-                    <b-input-group class="mb-2 mr-sm-2 mb-sm-0" prepend="Проверка пароля">
+                    <b-input-group class="eyeInput" prepend="Проверка пароля">
                         <b-input ref="confirm"
                                  :type="confirmShow"
                                  v-model="confirmPassword"
@@ -70,41 +68,40 @@
                                  @change="checkConfirmed"
                                  @mouseleave="checkConfirmed"
                                  autofill="off"
+                                 style="border-top-right-radius: 0.25rem; border-bottom-right-radius: 0.25rem;"
                         />
+                        <img ref="confirmEye" type="confirm" :src="images.closed" @click="switchVisibility">
                     </b-input-group>
-                    <img ref="confirmEye" type="confirm" :src="images.closed" @click="switchVisibility" width="7%">
                 </b-col>
             </b-row>
             <b-row class="reg-form-elem">
                 <b-col class="text-center">
-                    <a
-                            style="color: blue;"
-                            onmouseover="this.style.color='red'"
-                            onmouseout="this.style.color='blue'"
-                            onmousedown="this.style.color='firebrick'"
-                            @click="authorization"
-                            type="submit"
-                    >
-                        Уже зарегистрированы?
-                    </a>
-                    <b-button @click="performLogin"
-                              size="lg"
-                              v-if="!authenticationInProgress"
-                              variant="primary"
-                    >
-                        Зарегистрироваться
-                    </b-button>
-                    <b-spinner label="Spinning" type="grow" v-else variant="primary"/>
+                    <div v-if="!isSuccess">
+                        <a
+                                style="color: #6d7f8f; cursor: pointer;"
+                                onmouseover="this.style.color='#BDD5EC'"
+                                onmouseout="this.style.color='#6d7f8f'"
+                                @click="authorization"
+                                type="submit"
+
+                        >
+                            Уже зарегистрированы?
+                        </a>
+                        <b-button @click="performLogin"
+                                  size="lg"
+                                  v-if="!registrationInProgress"
+                                  style="margin-left: 30px"
+                        >
+                            Зарегистрироваться
+                        </b-button>
+                        <b-spinner label="Spinning" type="grow" v-else variant="primary"/>
+                    </div>
+                    <div v-else style="color: forestgreen">Пользователь успешно создан!</div>
                 </b-col>
             </b-row>
-            <b-row class="reg-form-elem" v-if="authenticationError.length > 0">
+            <b-row class="reg-form-elem" v-if="registrationError.length > 0">
                 <b-col class="text-center" offset="1" sm="10">
-                    <b-alert :show="authenticationError.length > 0" variant="danger">{{authenticationError}}</b-alert>
-                </b-col>
-            </b-row>
-            <b-row class="reg-form-elem" v-if="isSuccess">
-                <b-col class="text-center" offset="1" sm="10">
-                    <b-alert variant="success">Пользователь успешно создан!</b-alert>
+                    <b-alert :show="registrationError.length > 0" variant="danger">{{registrationError}}</b-alert>
                 </b-col>
             </b-row>
         </b-form>
@@ -131,12 +128,13 @@
                 confirmPassword: "",
                 name: "",
                 nickName: "",
-                authenticationError: "",
-                authenticationInProgress: false,
+                registrationError: "",
+                registrationInProgress: false,
                 images: {
-                    open: require('@/assets/static/0_open.png'),
-                    closed: require('@/assets/static/0_close.png')
-                }
+                    open: require('@/assets/static/0_eye_open.png'),
+                    closed: require('@/assets/static/0_eye_close.png')
+                },
+                regExp: /^(?=.*[A-Z])(?=.*\d)(?=.*[a-z])[A-Za-z\d]{8,}$/
             }
         },
         methods: {
@@ -159,80 +157,63 @@
                 this.nickName = "";
             },
             checkPassValid() {
-                if (!this.password.match('/^(?=.*[A-Z])(?=.*\\d)(?=.*[a-z])[A-Za-z\\d]{8,}$')) this.authenticationError = "Пароль должен быть не меньше 8 символов и содержать минимум 1 заглавную букву и цифру";
+                if (!this.regExp.exec(this.password)) this.registrationError = "Пароль должен быть не меньше 8 символов и содержать минимум 1 заглавную букву и цифру";
                 else {
-                    this.authenticationError = "";
+                    this.registrationError = "";
                     this.passwordChecked = true;
                 }
             },
             checkConfirmed() {
-                if (this.password !== this.confirmPassword) this.authenticationError = "Подтверждение не совпадает с паролем";
+                if (this.password !== this.confirmPassword) this.registrationError = "Подтверждение не совпадает с паролем";
                 else {
-                    this.authenticationError = "";
+                    this.registrationError = "";
                     this.passwordConfirmed = true;
                 }
             },
             checkAllFields() {
                 if (this.email.length == 0 || this.password.length == 0 || this.confirmPassword.length == 0 ||
                 this.name.length == 0 || this.nickName.length == 0) {
-                    this.authenticationError = "Необходимо заполнить все поля.";
+                    this.registrationError = "Необходимо заполнить все поля.";
                 }
             },
             closeModal() {
+                this.clearFields();
                 this.$nextTick(() => {
                     this.$bvModal.hide('registrationModal');
                 })
             },
-            validate() {
-
-            },
             authorization() {
-                this.$emit('auth', true);
+                this.$emit('auth');
                 this.closeModal();
             },
             clearError(){
-                this.authenticationError = "";
+                this.registrationError = "";
             },
             performLogin(event) {
                 event.preventDefault();
                 this.checkAllFields();
-                if (!this.passwordChecked) this.authenticationError += "\nПароль не удовлетворяет условиям безопасности.";
-                if (!this.passwordConfirmed) this.authenticationError += "\nПароль не подтвержден.";
-                if (this.authenticationError.length > 0) return false;
-                this.authenticationInProgress = true;
+                if (!this.passwordChecked) this.registrationError += "\nПароль не удовлетворяет условиям безопасности.";
+                if (!this.passwordConfirmed) this.registrationError += "\nПароль не подтвержден.";
+                if (this.registrationError.length > 0) return false;
+                this.registrationInProgress = true;
                 axios.post(API_SERVER_PATH + "/auth/registration", {
                     email: this.email,
                     password: this.password,
                     name: this.name,
                     nickName: this.nickName
                 }).then((response) => {
-                    this.authenticationInProgress = false;
-
-                    if (response.data === 'done')
-                        this.$nextTick(() => {
-                            this.$bvModal.hide('loginModal')
-                        })
-                    else if (response.data === 'done'){
-                        this.authenticationError = "Почтовый адрес уже используется";
+                    this.registrationInProgress = false;
+                    this.isSuccess = true;
+                    if (response.data === 'done') {
+                        setTimeout(() => {
+                            this.isSuccess = false;
+                            this.authorization();
+                        },2500)
                     }
-                    else {
-                        this.authenticationError = "Возникла ошибка сервера. Попробуйте еще раз";
-                    }
-                    /*if (response.data['userId'] === 1)
-                        this.$router.push('/admin/movie/list');
                     else
-                        this.$router.push('/movie/list');*/
-
-/*                    */
-
-                }).catch((error) => {
-                    this.authenticationInProgress = false;
-                    if (error.response) {
-                        this.authenticationError = "Неверный логин или пароль. Попробуйте еще раз";
-                    } else if (error.request) {
-                        this.authenticationError = "Сервер не отвечает";
-                    }
-                    this.logout();
+                        this.registrationError = "Почтовый адрес уже используется";
+                }).catch(() => {
+                    this.registrationError = "Сервер не отвечает";
                 });
             }
         }
@@ -241,8 +222,11 @@
 
 <style scoped>
     img {
-        width: 7%;
+        width: 28px;
+        height: 13%;/*22px;*/
         cursor:pointer;
+        margin-left: 25px;
+        margin-top: 1.5%;
     }
 
     .reg-container {
@@ -253,9 +237,9 @@
         width: 80%;
     }
 
-    .input-group>.input-group-prepend {
-        flex: 0 0 30%;
-    }
+    /*.input-group>.input-group-prepend {
+        flex: 0 0 31%;
+    }*/
 
     .input-group .input-group-text {
         width: 100%;
@@ -265,6 +249,30 @@
     .reg-form-elem {
         padding: 10px 0 5px 0;
         margin: 10px;
+    }
+
+    .eyeInput {
+        width: 109%;
+    }
+
+    .input-group-prepend {
+        width: 180px;
+    }
+
+    button {
+        color: #eadcc7;
+        background-color: #6d7e8c;
+        height: 45px;
+    }
+
+    button:focus {
+        background-color: #546f87;
+        color: #eadcc7;
+    }
+
+    button:hover {
+        background-color: #889bac;
+        color: #eadcc7;
     }
 
 </style>
